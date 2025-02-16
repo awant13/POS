@@ -1,0 +1,127 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+#  unibox-bin.py
+#
+
+import sys
+import os
+import shutil
+from ConfigParser import ConfigParser
+import zipfile
+import subprocess
+import datetime
+
+
+def storage_cfg(cfn):
+    cfg = ConfigParser()
+    cfg.read(cfn)
+    area = cfg.get('storage', 'area')
+    mountable = cfg.get('storage', 'mountable')
+    if mountable == 'True':
+        r = os.system('mount '+area)
+        if not (r == 0 or r == 256 or r == 8192):
+            sys.exit('Storage cant be mounted, terminated')
+    cfg_dir = os.path.join(area, 'config')
+    upd_dir = os.path.join(area, 'updates')
+    return (cfg_dir, upd_dir, area, mountable)
+
+
+def main_cfg(cfn):
+    cfgp = ConfigParser()
+    cfgp.read(cfn)
+    mcfg = {}
+    for sec in cfgp.sections():
+        mcfg[sec] = {}
+        for nm, vl in cfgp.items(sec):
+            mcfg[sec][nm] = vl
+    return mcfg
+
+
+def append_parser(cfg, name, cfn):
+    cfg[name] = ConfigParser()
+    cfg[name].read(cfn)
+
+
+def latest_bundle(dirname):
+    if not os.path.exists(dirname):
+        return ''
+    try:
+        bundle_name = sorted([
+            fnm for fnm in os.listdir(dirname)
+            if fnm[:6] == 'unibox' and fnm[-4:] == '.zip'
+        ], reverse=True)[0]
+    except IndexError:
+        bundle_name = ''
+    return bundle_name
+
+
+def bundle_mode(upd_dir, cfg):
+    # update
+    bundle_from_updates = latest_bundle(upd_dir)
+    bundle_name = latest_bundle('./')
+    if bundle_from_updates > bundle_name:
+        shutil.copy(os.path.join(upd_dir, bundle_from_updates), './')
+        bundle_name = bundle_from_updates
+
+    # link
+    if bundle_name:
+        try:
+            bundle_ver = bundle_name.split('_')[1]
+            brname, brver = bundle_ver.split('-')
+        except IndexError:
+            brname = bundle_name
+            brver = ''
+        except ValueError:
+            brname = bundle_name
+            brver = ''
+        cfg['main']['branch'] = brname
+        cfg['main']['softver'] = brver
+        cfg['main']['source'] = 'bundle'
+        print('{0} run from bundle {1} v.{2}'.format(app, brname, brver))
+        sys.path.insert(0, bundle_name)
+    else:
+        sys.exit('Modules not found, terminated')
+
+
+def bundle_make():
+    git_describe = subprocess.check_output(['git', 'describe', '--long'])
+    ver_info = [str(v) for v in git_describe.split(b'-', 3)[:3]]
+    ver_info.append(datetime.datetime.now().strftime("%y%m%d"))
+    zfn = 'unibox_{0}-{1}.{2}_{3}.zip'.format(*ver_info)
+    with zipfile.PyZipFile(zfn, mode="w") as z:
+        z.writepy("unibox")
+    sys.exit(zfn)
+
+
+if __name__ == '__main__':
+    app = 'Unibox'
+    thisScriptPath = os.path.dirname(os.path.abspath(__file__)) + '/'
+
+    if len(sys.argv) > 1 and sys.argv[1] == '--serial':
+        # show unibox serial and exit (work only on started system)
+        import uuid
+        ser = hex(uuid.getnode())[2:-1].upper()
+        sys.exit('0'*(16-len(ser)) + ser)
+
+    cfg_dir, upd_dir, area, mountable = storage_cfg('storage.conf')
+    cfg = main_cfg(os.path.join(cfg_dir, 'unibox.conf'))
+    cfg['storage'] = {}
+    cfg['storage']['area'] = area
+    cfg['storage']['mountable'] = mountable
+    append_parser(cfg, 'fr', os.path.join(cfg_dir, 'fr.conf'))
+
+    if os.path.exists('./unibox'):
+        if len(sys.argv) > 1 and sys.argv[1] == '--make':
+            # make bundle from source and exit
+            bundle_make()
+        else:
+            cfg['main']['branch'] = 'flox'
+            cfg['main']['softver'] = 'A'
+            cfg['main']['source'] = 'source'
+            print('{0} run from source'.format(app))
+    else:
+        bundle_mode(upd_dir, cfg)
+
+    import unibox
+    unibox.main(cfg)

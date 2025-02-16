@@ -1,0 +1,37 @@
+version: '3'
+
+services:
+  unibox-ve:
+    build:
+      context: ./docker
+      dockerfile: ./Dockerfile
+    container_name: unibox-ve
+    tty: true
+    ports:
+      - "8000:8000" # Метрики приложения    
+    tmpfs:
+      - /opt/storage
+      - /opt/storage/config
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ./storage/config/fr.conf:/opt/storage/config/fr.conf
+      - ./storage/config/unibox.conf:/opt/storage/config/unibox.conf
+      - /run/dbus/system_bus_socket:/run/dbus/system_bus_socket:ro
+    privileged: true
+    mem_limit: 512m  # Ограничение по памяти (512MB)
+    cpus: 1.0        # Ограничение по процессору (1 ядро)
+    labels:
+      autoheal-app: "true"
+    restart: always # Все перезапускаем контейнер
+
+  autoheal:
+    image: willfarrell/autoheal:latest
+    network_mode: none
+    environment:
+      AUTOHEAL_CONTAINER_LABEL: autoheal-app
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: always
+
+#  sudo docker inspect --format '{{json .State.Health}}' unibox-ve | jq Проверка healtchek

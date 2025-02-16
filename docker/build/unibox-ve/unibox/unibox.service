@@ -1,0 +1,13 @@
+[Unit]
+Description=Unibox service
+After=docker-entrypoint.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/unibox
+ExecStart=/usr/bin/python /opt/unibox/unibox-bin
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=docker-entrypoint.target
