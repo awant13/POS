@@ -2,7 +2,9 @@ version: '3'
 
 services:
   unibox-ve:
-    image: ghcr.io/awant13/pos/unibox:1.1
+    build:
+      context: ./docker
+      dockerfile: ./Dockerfile
     container_name: unibox-ve
     tty: true
     ports:
