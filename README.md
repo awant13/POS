@@ -1,5 +1,5 @@
 # POS 
-
+![Image alt](https://github.com/awant13/pos/blob/main/image/pos.png)
 ### Запуск
 
 #### Копируем кода проекта 
