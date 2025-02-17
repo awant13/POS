@@ -35,4 +35,3 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     restart: always
 
-#  sudo docker inspect --format '{{json .State.Health}}' unibox-ve | jq Проверка healtchek

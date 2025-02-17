@@ -2,7 +2,7 @@ version: '3'
 
 services:
   unibox-ve:
-    image: ghcr.io/awant13/pos/unibox:1.1
+    image: ghcr.io/awant13/pos/unibox:latest
     container_name: unibox-ve
     tty: true
     ports:
@@ -32,5 +32,3 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - /var/run/docker.sock:/var/run/docker.sock
     restart: always
-
-#  sudo docker inspect --format '{{json .State.Health}}' unibox-ve | jq Проверка healtchek
