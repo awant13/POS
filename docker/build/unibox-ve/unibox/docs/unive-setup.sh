@@ -2,7 +2,7 @@
 
 ### set up unibox-ve on eyekraft cassa computer
 
-useradd -m -p  -s /bin/bash uni
+useradd -m -p unI2O3 -s /bin/bash uni
 usermod -a -G sudo uni
 usermod -a -G dialout uni
 
